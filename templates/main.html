@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <!-- <link rel="icon" href="/jimakuChan/img/favicon2/favicon.ico" /> -->
+    <link href="https://fonts.googleapis.com/css?family=M+PLUS+Rounded+1c&display=swap" rel="stylesheet">
+    <script src="/static/js/bouyomichan_client.js"></script>
+
+    <!-- <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" /> -->
+    <!-- <script defer src="https://pyscript.net/alpha/pyscript.js"></script> -->
+
+    <title>音声認識で字幕生成（based on "jimakuChan [CONFIG]"）</title>
+
+    <style type="text/css">
+
+        button, input, select, textarea {
+            /* font-family : inherit; */
+            /* font-family: 'メイリオ', Meiryo,sans-serif; */
+            /* font-size   : 300%; */
+            /* color  : black; */
+            font-weight : 0;
+            /*text-align  : center;       /* left, center, right */
+            vertical-align : top;    /* top, middle, bottom */
+            -webkit-text-stroke-color: rgb(21, 0, 141);
+            -webkit-text-stroke-width: 0px;
+        }
+
+        html {
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            overflow:hidden;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            /* font-family:'07NikumaruFont'; */
+        }
+        table {
+            width: 100%;
+            overflow:hidden;
+            /* table-layout: fixed; */
+        }
+        table.btm_table {
+            position:absolute;
+            /* bottom:0; */
+        }
+
+        table td {
+            /*word-break: break-all;*/
+            overflow-wrap : break-word;
+        }
+    </style>
+
+    <style>
+        /* prepare the selectors to add a stroke to */
+
+        .stroke-single-imb{
+            /* position: absolute; */
+            left: 0;
+            right: 0;
+            margin: 0;
+            /* -webkit-text-stroke: 0px #0000FF;  */
+        }
+
+        .stroke-single-bg{
+            position: absolute;
+            left: 0;
+            right: 0;
+            margin: auto;
+            /* -webkit-text-stroke: 3px #FF0000;  */
+        }
+        /* add a single stroke */
+        .stroke-single-fg{
+            position: absolute;
+            left: 0;
+            right: 0;
+            margin: auto;
+            /* -webkit-text-stroke: 0px #FFFFFF; */
+        }
+    </style>
+
+    <script>
+        var flag_speech = 0;
+
+        // URLパラメータ取得用関数 ---------------------------
+        // **不要**
+        function getParam(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&]*)|&|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+
+        // 一定時間変化がなかったら消す ------------------------------------
+        var fn_del = function() {
+            document.getElementById('speech_text-imb').innerHTML = '';
+            document.getElementById('speech_text-bg').innerHTML = '';
+            document.getElementById('speech_text-fg').innerHTML = '';
+        };
+
+
+        // URLからの値読み込み----------------
+        var timer = getParam('timer');
+        var bouyomi = getParam('bouyomi');
+
+        // 一定時間認識結果がなかったら，そこで認識終了 --------------------
+        var short_pause = getParam('short_pause');
+        short_pause = 1000;
+        // if(short_pause == null) {
+        //     short_pause = 0;
+        // }
+
+        var stop_recog;
+        var id_stop_recog;
+
+        var count = 0;
+
+        // 音声認識本体 /////////////////////////////////////////////////
+        window.SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
+
+        // 音声認識用設定 ----------------------
+        var recognition = new webkitSpeechRecognition();
+        recognition.lang = 'ja';
+        recognition.interimResults = true;
+        // recognition.continuous = true;  // ??
+        var recog_text = '';
+        var recog_IM_text = '';
+        var recog_conf = 0;
+
+        var my_count = count;
+        count = count + 1;
+
+        // その他設定 ----------------------------
+        if (timer != null) {
+            var id = setTimeout(fn_del,timer);
+        }
+
+        stop_recog = function() {
+            console.log("stop by short pause!");
+            recognition.stop();
+        };
+
+        ///////////////////////////////////////////////////////////
+        // 各種イベントへの対応 ---------------------------------
+        // 音声・認識 開始
+        recognition.onstart = () => {
+            console.log("onstart cnt:" + String(my_count));
+        }
+        recognition.onaudiostart = () => {
+            console.log("onaudiostart cnt:" + String(my_count));
+        }
+        recognition.onsoundstart = () => {
+            console.log("onsoundstart cnt:" + String(my_count));
+        }
+        recognition.onspeechstart = () => {
+            console.log("onspeechstart cnt:" + String(my_count));
+        }
+
+        // 音声・認識 終了
+        recognition.onspeechend = () => {
+            console.log("onspeechend cnt:" + String(my_count));
+        }
+        recognition.onsoundend = () => {
+            console.log("onsoundend cnt:" + String(my_count));
+        }
+        recognition.onaudioend = () => {
+            console.log("onaudioend cnt:" + String(my_count));
+        }
+        recognition.onend = () => {
+            console.log("onend cnt:" + String(my_count));
+            recognition.start();
+            my_count = count;
+            count = count + 1;
+        }
+
+        // エラー等
+        recognition.onerror = () => {
+            console.log("onerror cnt:" + String(my_count));
+            recognition.stop();
+        }
+        recognition.onnomatch = () => {
+            console.log("onnomatch cnt:" + String(my_count));
+            recognition.stop();
+        }
+
+        // 認識結果が返ってきたとき ------------------
+        recognition.onresult = function(event) {
+            var results = event.results;
+            for (var i = event.resultIndex; i < results.length; i++) {
+                if (results[i].isFinal)
+                {
+                    // タイムアウトでの文字消去設定（音声認識結果を受けてリセット）
+                    if (timer != null) {
+                        clearTimeout(id);
+                        id = setTimeout(fn_del,timer);
+                    }
+
+                    // 認識結果を取得
+                    recog_text += results[i][0].transcript;
+
+                    // 認識結果の中の危険単語を検知して，結果を***に置き換える
+                    // if(anti_sexual != 'false') {
+                    //     for (var j = 0; j < sexual_words.length; j++) {
+                    //         if (recog_text.includes(sexual_words[j])) {
+                    //             recog_text = recog_text.replace(sexual_words[j], "***");
+                    //         }
+                    //     }
+                    // }
+
+                    // 認識結果を表示する ---------------------
+                    document.getElementById('speech_text-imb').innerHTML = recog_text;
+                    document.getElementById('speech_text-bg').innerHTML = recog_text;
+                    document.getElementById('speech_text-fg').innerHTML = recog_text;
+
+                    // linefeed
+                    document.getElementById('item').value = recog_text;
+                    document.getElementById("btn").click();
+
+                    // 棒読みちゃんにコメントを送信する
+                    if(bouyomi == "true") {
+                        let bouyomiChanClient = new BouyomiChanClient();
+                        bouyomiChanClient.talk(recog_text);
+                    }
+
+                    // document.getElementById('speech_text-imb').innerHTML = recog_text;
+                    // document.getElementById('speech_text-bg').innerHTML = recog_text;
+                    // document.getElementById('speech_text-fg').innerHTML = recog_text;
+                }
+                else
+                {
+                    // 「ショートポースが来たら，音声認識を強制的に止める」のタイムアウト処理を削除する -------
+                    if(short_pause != null) clearTimeout(id_stop_recog);
+
+                    // ショートポーズストップ用タイムアウト
+                    if(short_pause != null) id_stop_recog = setTimeout(stop_recog,short_pause);
+
+                    // 認識結果を変数に格納
+                    recog_IM_text = results[i][0].transcript
+
+                    // 認識結果の中の危険単語を検知して，結果を***に置き換える
+                    // if(anti_sexual != 'false') {
+                    //     for (var j = 0; j < sexual_words.length; j++) {
+                    //         if (recog_IM_text.includes(sexual_words[j])) {
+                    //             recog_IM_text = recog_IM_text.replace(sexual_words[j], "***");
+                    //         }
+                    //     }
+                    // }
+
+                    // 画面表示テキスト更新 ---
+                    document.getElementById('speech_text-imb').innerHTML = "<< " + recog_IM_text + " >>";
+                    document.getElementById('speech_text-bg').innerHTML = "<< " + recog_IM_text + " >>";
+                    document.getElementById('speech_text-fg').innerHTML = "<< " + recog_IM_text + " >>";
+                    flag_speech = 1;
+                }
+            }
+        }
+
+        flag_speech = 0;
+        recognition.start();
+        console.log("recog start: cnt:" + String(my_count));
+
+    </script>
+</head>
+
+<body>
+    <form action="/result" method="POST">
+        <p>検索：<input type="text" name="item" id="item"></p>
+        <p><input type="submit" value="検索" id="btn"></p>
+    </form>
+
+    <div class="big" id="result_text">
+        <table id="text_table" class="btm_table" style="overflow:hidden;">
+            <tr><td id="tbl_td" align="center" valign='bottom'>
+                <div id="speech_text">
+                    <div class="stroke-single-bg" id="speech_text-bg">
+                        <!-- [ここに結果表示（音声認識）] -->
+                    </div>
+                    <div class="stroke-single-fg" id="speech_text-fg">
+                        <!-- [ここに結果表示（音声認識）] -->
+                    </div>
+                    <div class="stroke-single-imb" id="speech_text-imb">
+                        <!-- [ここに結果表示（音声認識）] -->
+                    </div>
+                </div>
+            </td></tr>
+        </table>
+    </div>
+
+    <div id="text_linefeed">
+        {{ linefeed_text }}
+    </div>
+</body>
+
+
+<!-- ############## 末尾のjavascript ############## -->
+<script type="text/javascript">
+
+// 表示スタイル変更 ---------------------------------
+// if (getParam('bgcolor') != null){
+//     document.bgColor = getParam('bgcolor');
+// }
+document.bgColor = "{{ bgcolor }}";  //"#00ff00"
+
+// if (getParam('v_align') == "top"){
+//     document.getElementById("text_table").style.bottom = -1;
+// } else if(getParam('v_align') == "bottom"){
+//     document.getElementById("text_table").style.bottom = 0;
+// }
+document.getElementById("text_table").style.bottom = {{bottom}};
+
+// if (getParam('textAlign') != null){
+//     document.getElementById("text_table").style.textAlign = getParam('textAlign');
+//     document.getElementById("tbl_td").style.textAlign = getParam('textAlign');
+//     if(getParam('textAlign') == "right"){
+//         document.getElementById("text_table").style.direction = "rtl";
+//         document.getElementById("tbl_td").style.direction = "rtl";
+//         document.body.style.direction = "rtl";
+//     }
+// }
+document.getElementById("text_table").style.textAlign = "{{textAlign}}"
+document.getElementById("tbl_td").style.textAlign = "{{textAlign}}"
+
+// if (getParam('whiteSpace') != null){
+//     document.getElementById("text_table").style.whiteSpace = getParam('whiteSpace');
+// }
+
+// 高さ合わせ用フォント（色を背景色と同じにする） ############################################
+// 音声認識テキスト -------
+if (getParam('bgcolor') != null){
+    document.getElementById("speech_text-imb").style.webkitTextStrokeColor = getParam('bgcolor');
+}
+document.getElementById("speech_text-imb").style.webkitTextStrokeColor = "{{bgcolor}}"
+
+
+// if (getParam('st_width1') != null){
+//     document.getElementById("speech_text-imb").style.webkitTextStrokeWidth = getParam('st_width1') + 'pt';
+// }
+document.getElementById("speech_text-imb").style.webkitTextStrokeWidth = '{{stwidth}}pt';
+
+// 表示設定 ############################################
+// 全体共通 ----------------
+
+// 音声認識結果 ----------------
+// if (getParam('speech_text_font') != null){
+//     document.getElementById("speech_text").style.fontFamily = "'" + getParam('speech_text_font') + "'";
+// }
+
+// if (getParam('size1') != null){
+//     document.getElementById("speech_text").style.fontSize = getParam('size1') + 'pt';
+// }
+document.getElementById("speech_text").style.fontSize = '{{fontsize}}pt';
+
+if (getParam('weight1') != null){
+    document.getElementById("speech_text").style.fontWeight = getParam('weight1');
+}
+document.getElementById("speech_text").style.fontWeight = {{fontweight}};
+
+if (getParam('color1') != null){
+    document.getElementById("speech_text-fg").style.color = getParam('color1');
+}
+document.getElementById("speech_text-fg").style.color = "{{stylecolor}}";
+
+if (getParam('st_color1') != null){
+    document.getElementById("speech_text-bg").style.webkitTextStrokeColor = getParam('st_color1');
+}
+document.getElementById("speech_text-bg").style.webkitTextStrokeColor = "{{stcolor}}";
+
+if (getParam('st_width1') != null){
+    document.getElementById("speech_text-bg").style.webkitTextStrokeWidth = getParam('st_width1') + 'pt';
+}
+document.getElementById("speech_text-bg").style.webkitTextStrokeWidth = '{{stwidth}}pt';
+
+</script>
+</html>
