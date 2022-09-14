@@ -86,18 +86,6 @@
     <script>
         var flag_speech = 0;
 
-        // URLパラメータ取得用関数 ---------------------------
-        // **不要**
-        function getParam(name, url) {
-            if (!url) url = window.location.href;
-            name = name.replace(/[\[\]]/g, "\\$&");
-            var regex = new RegExp("[?&]" + name + "(=([^&]*)|&|$)"),
-                results = regex.exec(url);
-            if (!results) return null;
-            if (!results[2]) return '';
-            return decodeURIComponent(results[2].replace(/\+/g, " "));
-        }
-
         // 一定時間変化がなかったら消す ------------------------------------
         var fn_del = function() {
             document.getElementById('speech_text-imb').innerHTML = '';
@@ -107,12 +95,11 @@
 
 
         // URLからの値読み込み----------------
-        var timer = getParam('timer');
-        var bouyomi = getParam('bouyomi');
+        var timer = null;
+        var bouyomi = false;
 
         // 一定時間認識結果がなかったら，そこで認識終了 --------------------
-        var short_pause = getParam('short_pause');
-        short_pause = 1000;
+        var short_pause = 1000;
         // if(short_pause == null) {
         //     short_pause = 0;
         // }
@@ -218,10 +205,14 @@
                     document.getElementById('speech_text-imb').innerHTML = recog_text;
                     document.getElementById('speech_text-bg').innerHTML = recog_text;
                     document.getElementById('speech_text-fg').innerHTML = recog_text;
+                    // document.getElementById('speech_text-imb').innerHTML = "{{linefeed_text}}";
+                    // document.getElementById('speech_text-bg').innerHTML = "{{linefeed_text}}";
+                    // document.getElementById('speech_text-fg').innerHTML = "{{linefeed_text}}";
 
                     // linefeed
-                    document.getElementById('item').value = recog_text;
-                    document.getElementById("btn").click();
+                    console.log(recog_text);
+                    document.getElementById('recog_text').value = recog_text;
+                    document.getElementById("recog_btn").click();
 
                     // 棒読みちゃんにコメントを送信する
                     if(bouyomi == "true") {
@@ -271,8 +262,10 @@
 
 <body>
     <form action="/result" method="POST">
-        <p>検索：<input type="text" name="item" id="item"></p>
-        <p><input type="submit" value="検索" id="btn"></p>
+        <p>
+            <input type="text" name="recog_text" id="recog_text" style="display:none">
+            <input type="submit" value="表示" id="recog_btn" style="display:none">
+        </p>
     </form>
 
     <div class="big" id="result_text">
@@ -281,21 +274,24 @@
                 <div id="speech_text">
                     <div class="stroke-single-bg" id="speech_text-bg">
                         <!-- [ここに結果表示（音声認識）] -->
+                        {{ linefeed_text}}
                     </div>
                     <div class="stroke-single-fg" id="speech_text-fg">
                         <!-- [ここに結果表示（音声認識）] -->
+                        {{ linefeed_text}}
                     </div>
                     <div class="stroke-single-imb" id="speech_text-imb">
                         <!-- [ここに結果表示（音声認識）] -->
+                        {{ linefeed_text}}
                     </div>
                 </div>
             </td></tr>
         </table>
     </div>
 
-    <div id="text_linefeed">
+    <!-- <div id="text_linefeed">
         {{ linefeed_text }}
-    </div>
+    </div> -->
 </body>
 
 
@@ -303,27 +299,10 @@
 <script type="text/javascript">
 
 // 表示スタイル変更 ---------------------------------
-// if (getParam('bgcolor') != null){
-//     document.bgColor = getParam('bgcolor');
-// }
 document.bgColor = "{{ bgcolor }}";  //"#00ff00"
 
-// if (getParam('v_align') == "top"){
-//     document.getElementById("text_table").style.bottom = -1;
-// } else if(getParam('v_align') == "bottom"){
-//     document.getElementById("text_table").style.bottom = 0;
-// }
 document.getElementById("text_table").style.bottom = {{bottom}};
 
-// if (getParam('textAlign') != null){
-//     document.getElementById("text_table").style.textAlign = getParam('textAlign');
-//     document.getElementById("tbl_td").style.textAlign = getParam('textAlign');
-//     if(getParam('textAlign') == "right"){
-//         document.getElementById("text_table").style.direction = "rtl";
-//         document.getElementById("tbl_td").style.direction = "rtl";
-//         document.body.style.direction = "rtl";
-//     }
-// }
 document.getElementById("text_table").style.textAlign = "{{textAlign}}"
 document.getElementById("tbl_td").style.textAlign = "{{textAlign}}"
 
@@ -333,15 +312,8 @@ document.getElementById("tbl_td").style.textAlign = "{{textAlign}}"
 
 // 高さ合わせ用フォント（色を背景色と同じにする） ############################################
 // 音声認識テキスト -------
-if (getParam('bgcolor') != null){
-    document.getElementById("speech_text-imb").style.webkitTextStrokeColor = getParam('bgcolor');
-}
 document.getElementById("speech_text-imb").style.webkitTextStrokeColor = "{{bgcolor}}"
 
-
-// if (getParam('st_width1') != null){
-//     document.getElementById("speech_text-imb").style.webkitTextStrokeWidth = getParam('st_width1') + 'pt';
-// }
 document.getElementById("speech_text-imb").style.webkitTextStrokeWidth = '{{stwidth}}pt';
 
 // 表示設定 ############################################
@@ -352,29 +324,14 @@ document.getElementById("speech_text-imb").style.webkitTextStrokeWidth = '{{stwi
 //     document.getElementById("speech_text").style.fontFamily = "'" + getParam('speech_text_font') + "'";
 // }
 
-// if (getParam('size1') != null){
-//     document.getElementById("speech_text").style.fontSize = getParam('size1') + 'pt';
-// }
 document.getElementById("speech_text").style.fontSize = '{{fontsize}}pt';
 
-if (getParam('weight1') != null){
-    document.getElementById("speech_text").style.fontWeight = getParam('weight1');
-}
 document.getElementById("speech_text").style.fontWeight = {{fontweight}};
 
-if (getParam('color1') != null){
-    document.getElementById("speech_text-fg").style.color = getParam('color1');
-}
 document.getElementById("speech_text-fg").style.color = "{{stylecolor}}";
 
-if (getParam('st_color1') != null){
-    document.getElementById("speech_text-bg").style.webkitTextStrokeColor = getParam('st_color1');
-}
 document.getElementById("speech_text-bg").style.webkitTextStrokeColor = "{{stcolor}}";
 
-if (getParam('st_width1') != null){
-    document.getElementById("speech_text-bg").style.webkitTextStrokeWidth = getParam('st_width1') + 'pt';
-}
 document.getElementById("speech_text-bg").style.webkitTextStrokeWidth = '{{stwidth}}pt';
 
 </script>
