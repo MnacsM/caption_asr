@@ -90,10 +90,12 @@
 <!-- # 動作例表示画面 ######################### -->
 <iframe src="{{url_for('show_iframe')}}" name="sample" width="100%" height="30%" id="asr_frame"></iframe>
 
-<div id="pyscriptsample"></div>
-<py-script src="/static/pyscript/linefeed.py"></py-script>
+<!-- <div id="pyscriptsample"></div> -->
+<!-- <py-script src="/static/pyscript/linefeed.py"></py-script> -->
 
 <!-- # 背景の色 ############################## -->
+<BR>
+
 　　　　文字色 フチ色<BR>
 認識　：<input id="color1" type="color" value="#ffffff" oninput="changeTextColor('fg',this.value,1); updateOptionValues(only_url=true)" />
 <input id="st_color1" type="color" value="#000000" oninput="changeTextColor('bg',this.value,1); updateOptionValues(only_url=true)" />
@@ -167,34 +169,30 @@
 
 フォント名：<input type="text" name="speech_text_font" id="speech_text_font" size="30" oninput="updateOptionValues();" /><BR>
 
-↑言語設定は，即反映されないので，設定後リロードしてみてね．（なんで変わらんのかなー(´・ω・｀)）<BR>
 <BR>
 
 <!-- # テキスト表示を●秒後に消す ######################### -->
 何ミリ秒後に文を消す？　　　：　
-<input type="text" name="timer" id="timer" size="10" oninput="updateOptionValues();" />ミリ秒（半角数字で入れてね．1000ミリ秒 = 1秒）<BR>
+<input type="text" name="timer" id="timer" size="10" oninput="updateOptionValues();" />ミリ秒<BR>
 
 <!-- # 文の終わり ######################### -->
 何ミリ秒黙ったら文を区切る？：　
-<input type="text" name="short_pause" value="750" id="short_pause" size="10" oninput="updateOptionValues();" />ミリ秒（半角数字で入れてね．1000ミリ秒 = 1秒）<BR>
+<input type="text" name="short_pause" value="750" id="short_pause" size="10" oninput="updateOptionValues();" />ミリ秒<BR>
 （500：すぐ切る｜750：普通｜1000：つなぐ　調整して．何も入れないと，これまでと同じ動作になる．）<BR>
 <BR>
 
 
 <!-- # 棒読みちゃん連携 ######################### -->
-棒読みちゃん連携を使う：<input type="checkbox" id="bouyomi" onchange="updateOptionValues()"> ← 使う場合チェック入れる．詳細 → <a target="_blank" href="https://twitter.com/sayonari/status/1386937837682003968">twitter</a><BR>
+棒読みちゃん連携を使う：<input type="checkbox" id="bouyomi" onchange="updateOptionValues()"> ← 使う場合チェック入れる．<BR>
 <BR>
 
 <!-- # センシティブワード対応する！ ######################### -->
 センシティブワード対応（***に置き換え）を<font color="red">やめる</font>：<input type="checkbox" id="anti_sexual" onchange="updateOptionValues()"> <BR>
-↑動作が重いときは，チェックを付けて機能をOFFにしたら，解決するかもね．<BR>
 <BR>
 
 <!-- # URL view & copy button ############### -->
 URL : <textarea name="url" id="url" rows="7" cols="90"></textarea><BR>
 <BR>
-　　　<input type="button" value="copy to clipboard" id="textarea_copy" onclick="document.getElementsByTagName('textarea')[0].select();document.execCommand('copy');">
-　<a id="open_link" target="_blank" href="">[別窓で開く]</a><BR>
 <BR><BR><BR><BR>
 テスト中<BR>
 </body>
