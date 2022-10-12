@@ -1,6 +1,18 @@
-import CaboCha
+import re
+
+import ginza
+import spacy
 import torch
 from transformers import BertModel, BertTokenizer
+
+re_kanji = re.compile(r'^[\u4E00-\u9FD0]+$')
+
+# GPU on M1 Mac
+device = torch.device("mps")
+tokenizer = BertTokenizer.from_pretrained(
+    "cl-tohoku/bert-base-japanese-whole-word-masking"
+)
+c = spacy.load('ja_ginza')
 
 
 class BERTClass(torch.nn.Module):
@@ -42,83 +54,76 @@ def load_best(best_model_path, model):
 
 def insertion(text):
     # cabocha で解析
-    tree = c.parse(text)
+    # tree = c.parse(text)
 
-    length = 0
     linefeed_text = ''
-    old_chunk_text = ''
-    for i in range(tree.chunk_size()):  # 文節数のループ
-        chunk = tree.chunk(i)  # chunk=文節．i 番目の文節
 
-        chunk_text = ''
-        for ix in range(chunk.token_pos, chunk.token_pos + chunk.token_size):
-            token = tree.token(ix)
-            # token.normalized_surface  # 表層
-            chunk_text += token.normalized_surface  # 形態素ごとに繋いでいく
+    # ginza で解析
+    doc = c(text)
+    for sent in doc.sents:
 
-        print(chunk_text)  # debug
+        length = 0
+        old_chunk_text = ''
+        for span in ginza.bunsetu_spans(sent):
+            chunk_text = span.text
+            print(chunk_text)  # debug
 
-        length += len(chunk_text)
+            length += len(chunk_text)
 
-        test_text = old_chunk_text + "[SEP]" + chunk_text
-        with torch.no_grad():
-            inputs = tokenizer.encode_plus(
-                test_text,
-                None,
-                add_special_tokens=True,
-                max_length=50,
-                padding='max_length',
-                return_token_type_ids=True,
-                truncation=True
-            )
-            ids = inputs['input_ids']
-            mask = inputs['attention_mask']
-            token_type_ids = inputs["token_type_ids"]
-            ids = torch.tensor([ids], dtype=torch.long).to(device, dtype=torch.long)
-            mask = torch.tensor([mask], dtype=torch.long).to(device, dtype=torch.long)
-            token_type_ids = torch.tensor([token_type_ids], dtype=torch.long).to(device, dtype=torch.long)
+            test_text = old_chunk_text + "[SEP]" + chunk_text
+            with torch.no_grad():
+                inputs = tokenizer.encode_plus(
+                    test_text,
+                    None,
+                    add_special_tokens=True,
+                    max_length=50,
+                    padding='max_length',
+                    return_token_type_ids=True,
+                    truncation=True
+                )
+                ids = inputs['input_ids']
+                mask = inputs['attention_mask']
+                token_type_ids = inputs["token_type_ids"]
+                ids = torch.tensor([ids], dtype=torch.long).to(device, dtype=torch.long)
+                mask = torch.tensor([mask], dtype=torch.long).to(device, dtype=torch.long)
+                token_type_ids = torch.tensor([token_type_ids], dtype=torch.long).to(device, dtype=torch.long)
+                features = torch.tensor([features], dtype=torch.float).to(device, dtype=torch.float)
 
-            # print(ids)  # 読み込んだテキストを id 化したものの確認, debug
+                # print(ids)  # 読み込んだテキストを id 化したものの確認, debug
 
-            output_lf, output_p = model(ids, mask, token_type_ids)
+                output_lf, output_p = model(ids, mask, token_type_ids)
 
-        pred_lf = torch.sigmoid(output_lf).cpu().detach().numpy().tolist()  # 改行
-        pred_p = torch.sigmoid(output_p).cpu().detach().numpy().tolist()  # 読点
+            pred_lf = torch.sigmoid(output_lf).cpu().detach().numpy().tolist()  # 改行
+            pred_p = torch.sigmoid(output_p).cpu().detach().numpy().tolist()  # 読点
 
-        print(pred_lf[0][0], pred_p[0][0])
+            print(pred_lf[0][0], pred_p[0][0])
 
-        if pred_p[0][0] > 0.5:
-            print("読点")
-            linefeed_text += "、"  # 直前の文節境界に改行を付与
-            length += 1
+            if pred_p[0][0] > 0.5:
+                print("読点")
+                linefeed_text += "、"  # 直前の文節境界に改行を付与
+                length += 1
 
-        if pred_lf[0][0] > 0.5:
-            print("モデルによる改行")
-            linefeed_text += "<br>"  # 直前の文節境界に改行を付与
-            length = len(chunk_text)
-        elif length > 20:  # 最終文節を繋いだときに20文字を超えていたら
-            print("文字数による改行")
-            linefeed_text += "<br>"  # 直前の文節境界に改行を付与
-            length = len(chunk_text)
+            if pred_lf[0][0] > 0.5:
+                print("モデルによる改行")
+                # linefeed_text += "<br>"  # 直前の文節境界に改行を付与
+                linefeed_text += "\n"  # for gradio
+                length = len(chunk_text)
+            elif length > 20:  # 最終文節を繋いだときに20文字を超えていたら
+                print("文字数による改行")
+                # linefeed_text += "<br>"  # 直前の文節境界に改行を付与
+                linefeed_text += "\n"  # for gradio
+                length = len(chunk_text)
 
-        linefeed_text += chunk_text
+            linefeed_text += chunk_text
 
-        old_chunk_text = chunk_text
+            old_chunk_text = chunk_text
+        linefeed_text += "。\n"
 
     print(linefeed_text)
-
     return linefeed_text
 
 
-# GPU on M1 Mac
-device = torch.device("mps")
-tokenizer = BertTokenizer.from_pretrained(
-    "cl-tohoku/bert-base-japanese-whole-word-masking"
-)
 model = BERTClass()
 model.to(device)
 best_model = './insertion_lf-p_model.pt'
 model = load_best(best_model, model)
-
-# cabocha の解析記
-c = CaboCha.Parser()
