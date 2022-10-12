@@ -15,6 +15,31 @@ tokenizer = BertTokenizer.from_pretrained(
 c = spacy.load('ja_ginza')
 
 
+# class BERTClass(torch.nn.Module):
+#     def __init__(self):
+#         super(BERTClass, self).__init__()
+#         self.l1 = BertModel.from_pretrained(
+#             "cl-tohoku/bert-base-japanese-whole-word-masking",
+#             return_dict=False,
+#         )
+#         self.l2 = torch.nn.Dropout(0.3)
+#         self.l3 = torch.nn.Linear(768, 1)  # 二値分類のため，出力層は1次元？
+#         self.l4 = torch.nn.Dropout(0.3)
+#         self.l5 = torch.nn.Linear(768, 1)  # 二値分類のため，出力層は1次元？
+
+#     def forward(self, ids, mask, token_type_ids):
+#         _, output_1 = self.l1(
+#             ids, attention_mask=mask, token_type_ids=token_type_ids
+#         )
+#         output_2 = self.l2(output_1)
+#         output_lf = self.l3(output_2)
+
+#         output_3 = self.l2(output_1)
+#         output_p = self.l3(output_3)
+
+#         return output_lf, output_p
+
+
 class BERTClass(torch.nn.Module):
     def __init__(self):
         super(BERTClass, self).__init__()
@@ -22,20 +47,23 @@ class BERTClass(torch.nn.Module):
             "cl-tohoku/bert-base-japanese-whole-word-masking",
             return_dict=False,
         )
+        # 改行
         self.l2 = torch.nn.Dropout(0.3)
-        self.l3 = torch.nn.Linear(768, 1)  # 二値分類のため，出力層は1次元？
+        self.l3 = torch.nn.Linear(768, 1)
+        # 読点
         self.l4 = torch.nn.Dropout(0.3)
-        self.l5 = torch.nn.Linear(768, 1)  # 二値分類のため，出力層は1次元？
+        self.l5 = torch.nn.Linear(769, 1)  # 768 は bert の次元数．そこに独自の素性の数を足す
 
-    def forward(self, ids, mask, token_type_ids):
+    def forward(self, ids, mask, token_type_ids, features):
         _, output_1 = self.l1(
             ids, attention_mask=mask, token_type_ids=token_type_ids
         )
         output_2 = self.l2(output_1)
         output_lf = self.l3(output_2)
 
-        output_3 = self.l2(output_1)
-        output_p = self.l3(output_3)
+        output_1 = torch.cat([output_1, features], dim=1)  # embed と素性を連結
+        output_3 = self.l4(output_1)
+        output_p = self.l5(output_3)
 
         return output_lf, output_p
 
@@ -53,9 +81,6 @@ def load_best(best_model_path, model):
 
 
 def insertion(text):
-    # cabocha で解析
-    # tree = c.parse(text)
-
     linefeed_text = ''
 
     # ginza で解析
@@ -67,6 +92,18 @@ def insertion(text):
         for span in ginza.bunsetu_spans(sent):
             chunk_text = span.text
             print(chunk_text)  # debug
+
+            # features
+            if old_chunk_text != '':
+                before_status = re_kanji.fullmatch(old_chunk_text[-1])
+                after_status = re_kanji.fullmatch(chunk_text[0])
+                # 漢字が連続
+                if before_status and after_status:
+                    features = [1]
+                else:
+                    features = [0]
+            else:
+                features = [0]
 
             length += len(chunk_text)
 
@@ -91,7 +128,8 @@ def insertion(text):
 
                 # print(ids)  # 読み込んだテキストを id 化したものの確認, debug
 
-                output_lf, output_p = model(ids, mask, token_type_ids)
+                # output_lf, output_p = model(ids, mask, token_type_ids)
+                output_lf, output_p = model(ids, mask, token_type_ids, features)
 
             pred_lf = torch.sigmoid(output_lf).cpu().detach().numpy().tolist()  # 改行
             pred_p = torch.sigmoid(output_p).cpu().detach().numpy().tolist()  # 読点
