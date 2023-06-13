@@ -1,6 +1,6 @@
 import gradio as gr
 
-from model import insertion
+from app.model import insertion
 
 examples = [
     "例えば環境の問題あるいは人口の問題エイズの問題などなど地球規模の問題たくさん生じておりますが残念ながらこれらの問題は二十一世紀にも継続しあるいは悲観的な見方をすればさらに悪くなるという風に思われます",

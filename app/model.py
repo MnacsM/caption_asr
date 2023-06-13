@@ -1,3 +1,4 @@
+import os
 import re
 
 import ginza
@@ -145,5 +146,6 @@ def insertion(text):
 
 model = BERTClass()
 model.to(device)
-best_model = './models/insertion_lf-p_model.pt'
+
+best_model = os.path.join(os.path.dirname(__file__), 'models/insertion_lf-p_model.pt')
 model = load_best(best_model, model)
