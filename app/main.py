@@ -2,7 +2,8 @@ import os
 from datetime import timedelta
 
 from flask import Flask  # Flaskと、HTMLをレンダリングするrender_templateをインポート
-from flask import Markup, render_template, request, session
+from flask import render_template, request, session
+from markupsafe import Markup
 from model import insertion
 
 app = Flask(__name__)  # Flask の起動

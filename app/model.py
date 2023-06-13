@@ -1,5 +1,6 @@
 import os
 import re
+from argparse import ArgumentParser
 
 import ginza
 import spacy
@@ -9,8 +10,13 @@ from transformers import BertModel, BertTokenizer
 re_kanji = re.compile(r'^[\u4E00-\u9FD0]+$')
 
 # GPU on M1 Mac
-device = torch.device("mps")
-# device = torch.device("cpu")
+# parser = ArgumentParser()
+# parser.add_argument('--device', type=str, default='mps',
+#                     choices=['cpu', 'mps', 'cuda'])
+# args = parser.parse_args()
+# device = torch.device(args.device)
+
+device = torch.device("cpu")
 tokenizer = BertTokenizer.from_pretrained(
     "cl-tohoku/bert-base-japanese-whole-word-masking"
 )
