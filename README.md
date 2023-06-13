@@ -18,7 +18,7 @@
 ## Usage
 
 ```shell
-$ python app.py
+$ python main.py
 ```
 
 ## require
