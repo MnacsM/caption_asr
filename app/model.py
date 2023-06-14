@@ -127,12 +127,10 @@ def insertion(text):
                 if pred_lf[0][0] > 0.5:
                     print("モデルによる改行")
                     linefeed_text += "<br>"  # 直前の文節境界に改行を付与
-                    # linefeed_text += "\n"  # for gradio
                     length = len(chunk_text)
                 elif length > 20:  # 最終文節を繋いだときに20文字を超えていたら
                     print("文字数による改行")
                     linefeed_text += "<br>"  # 直前の文節境界に改行を付与
-                    # linefeed_text += "\n"  # for gradio
                     length = len(chunk_text)
 
             linefeed_text += chunk_text
@@ -141,10 +139,8 @@ def insertion(text):
 
         if sent.text.endswith('。'):
             linefeed_text += "<br>"
-            # linefeed_text += "\n"  # for gradio
         else:
             linefeed_text += "。<br>"  # for gradio
-            # linefeed_text += "。\n"  # for gradio
 
     print(linefeed_text)
     return linefeed_text
@@ -153,5 +149,15 @@ def insertion(text):
 model = BERTClass()
 model.to(device)
 
-best_model = os.path.join(os.path.dirname(__file__), 'models/insertion_lf-p_model.pt')
+best_model = os.path.join(os.path.dirname(__file__), 'models/insertion_lf-p_model_cpu.pt')
 model = load_best(best_model, model)
+
+# docker用にcpuに変更したものを保存
+# checkpoint = {
+#     "epoch": None,
+#     "valid_loss_min": None,
+#     "state_dict": model.state_dict(),
+#     "optimizer": None,
+#     }
+# torch.save(checkpoint, os.path.join(os.path.dirname(__file__), 'models/insertion_lf-p_model_cpu.pt'))
+# print("done")
