@@ -9,7 +9,10 @@ examples = [
 
 
 def greet(text):
-    return insertion(text)
+    result = insertion(text)
+    result = result.replace("<br>", "\n")
+
+    return result
 
 
 demo = gr.Interface(
