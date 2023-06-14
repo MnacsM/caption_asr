@@ -129,8 +129,7 @@ dmypy.json
 .pyre/
 
 #
-# insertion_model.pt
-insertion_*model.pt
 .DS_Store
 flagged/
 openssl/
+app/models/

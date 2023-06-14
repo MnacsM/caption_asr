@@ -1,8 +1,9 @@
+import os
 from datetime import timedelta
 
 from flask import Flask  # Flaskと、HTMLをレンダリングするrender_templateをインポート
-from flask import Markup, render_template, request, session
-
+from flask import render_template, request, session
+from markupsafe import Markup
 from model import insertion
 
 app = Flask(__name__)  # Flask の起動
@@ -73,4 +74,12 @@ def result():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=334, ssl_context=('openssl/server.crt', 'openssl/server.key'), threaded=True, debug=True)
+    SERVER_CRT = os.path.join(os.path.dirname(__file__), 'openssl/server.crt')
+    SERVER_KEY = os.path.join(os.path.dirname(__file__), 'openssl/server.key')
+
+    app.run(
+        host='0.0.0.0',
+        port=334,
+        ssl_context=(SERVER_CRT, SERVER_KEY),
+        threaded=True, debug=True
+    )
