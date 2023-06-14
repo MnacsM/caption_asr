@@ -3,7 +3,7 @@ services:
   app:
     build: .
     ports:
-      - "334:334"
+      - "335:334"
     container_name: caption_asr_app
     volumes:
       - ./app:/app
