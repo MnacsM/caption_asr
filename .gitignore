@@ -133,3 +133,6 @@ dmypy.json
 flagged/
 openssl/
 app/models/
+demo.py
+app/static/js/bouyomichan_client.js
+app/static/pyscript/linefeed.py
