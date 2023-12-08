@@ -7,8 +7,6 @@ import spacy
 import torch
 from transformers import BertModel, BertTokenizer
 
-re_kanji = re.compile(r'^[\u4E00-\u9FD0]+$')
-
 # GPU on M1 Mac
 # parser = ArgumentParser()
 # parser.add_argument('--device', type=str, default='mps',
@@ -16,11 +14,7 @@ re_kanji = re.compile(r'^[\u4E00-\u9FD0]+$')
 # args = parser.parse_args()
 # device = torch.device(args.device)
 
-device = torch.device("cpu")
-tokenizer = BertTokenizer.from_pretrained(
-    "cl-tohoku/bert-base-japanese-whole-word-masking"
-)
-c = spacy.load('ja_ginza')
+re_kanji = re.compile(r'^[\u4E00-\u9FD0]+$')
 
 
 class BERTClass(torch.nn.Module):
@@ -63,7 +57,7 @@ def load_best(best_model_path, model):
     return model
 
 
-def insertion(text):
+def lf_p_insertion(text):
     linefeed_text = ''
 
     # ginza で解析
@@ -142,15 +136,22 @@ def insertion(text):
         else:
             linefeed_text += "。<br>"  # for gradio
 
-    print(linefeed_text)
+    print("insertion:", linefeed_text)
     return linefeed_text
 
+
+device = torch.device("cpu")
+tokenizer = BertTokenizer.from_pretrained(
+    "cl-tohoku/bert-base-japanese-whole-word-masking"
+)
+c = spacy.load('ja_ginza')
 
 model = BERTClass()
 model.to(device)
 
 best_model = os.path.join(os.path.dirname(__file__), 'models/insertion_lf-p_model_cpu.pt')
 model = load_best(best_model, model)
+print("load best model")
 
 # docker用にcpuに変更したものを保存
 # checkpoint = {
