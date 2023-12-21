@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
- 
+
 <head>
     <meta charset="UTF-8">
     <link href="https://fonts.googleapis.com/css?family=M+PLUS+1p" rel="stylesheet">
@@ -13,24 +13,24 @@
     <link href="https://fonts.googleapis.com/css?family=Sawarabi+Gothic" rel="stylesheet">
     <link href="https://fonts.googleapis.com/earlyaccess/nicomoji.css" rel="stylesheet">
 
-    <link href="./font.css" rel="stylesheet">
+    <link href="/static/css/font.css" rel="stylesheet">
 
-    <link rel="icon" href="./img/favicon2/favicon.ico" />
-    <script src="js/bouyomichan_client.js"></script>
+    <!-- <link rel="icon" href="./img/favicon2/favicon.ico" /> -->
+    <script src="/static/js/bouyomichan_client.js"></script>
 
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FKQVD3TMXH"></script>
+    <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-FKQVD3TMXH"></script>
     <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
 
     gtag('config', 'G-FKQVD3TMXH');
-    </script>
+    </script> -->
     <!-- END: Google tag (gtag.js) -->
 
 
-    <title>jimakuChan：音声認識字幕ちゃん</title>
+    <title>音声認識で字幕生成（based on "jimakuChan：音声認識字幕ちゃん"）</title>
 
     <style type="text/css">
         button, input, select, textarea {
@@ -106,7 +106,6 @@
     </style>
 
     <script>
-         
         // URLパラメータ取得用関数 ---------------------------
         function getParam(name, url) {
             if (!url) url = window.location.href;
@@ -152,7 +151,7 @@
         var trans2_destlang = '';
 
         var gas_key = getParam('gas_key');
-        
+
         var TRANS_URL = 'https://script.google.com/macros/s/' + gas_key + '/exec';
         var query = ''
 
@@ -162,10 +161,11 @@
 
 
         // 一定時間認識結果がなかったら，そこで認識終了 --------------------
-        var short_pause = getParam('short_pause');
+        // var short_pause = getParam('short_pause');
         // if(short_pause == null) {
         //     short_pause = 0;
         // }
+        var short_pause = 1000;
 
         var stop_recog;
         var id_stop_recog;
@@ -185,7 +185,6 @@
                     sexual_words = sexual_words.filter(Boolean);
                 })
         }
-            
 
         // 音声認識本体 /////////////////////////////////////////////////
         window.SpeechRecognition = window.SpeechRecognition || webkitSpeechRecognition;
@@ -218,7 +217,7 @@
         // 各種イベントへの対応 --------------------------------- 
         // 音声・認識 開始
         recognition.onstart = () => {
-            console.log("onstart cnt:" + String(my_count));
+            // console.log("onstart cnt:" + String(my_count));
         }
         recognition.onaudiostart = () => {
             console.log("onaudiostart cnt:" + String(my_count));
@@ -229,7 +228,7 @@
         recognition.onspeechstart = () => {
             console.log("onspeechstart cnt:" + String(my_count));
         }
-        
+
         // 音声・認識 終了
         recognition.onspeechend = () => {
             console.log("onspeechend cnt:" + String(my_count));
@@ -241,7 +240,7 @@
             console.log("onaudioend cnt:" + String(my_count));
         }
         recognition.onend = () => {
-            console.log("onend cnt:" + String(my_count));
+            // console.log("onend cnt:" + String(my_count));
             recognition.start();
             my_count = count;
             count = count + 1;
@@ -256,7 +255,6 @@
             console.log("onnomatch cnt:" + String(my_count));
             recognition.stop();
         }
-
 
         // 言語設定 ----------------------------
         if (arg_recog != null) {
@@ -279,14 +277,14 @@
                     // タイムアウトでの文字消去設定（音声認識結果を受けてリセット）
                     if (timer != null) {
                         clearTimeout(id);
-                        id = setTimeout(fn_del,timer);   
+                        id = setTimeout(fn_del,timer);
                     }
 
                     // 認識結果を取得
                     recog_text = results[i][0].transcript;
-                        
+
                     // 認識結果の中の危険単語を検知して，結果を***に置き換える
-                    if(anti_sexual != 'false') {
+                    if (anti_sexual != 'false') {
                         for (var j = 0; j < sexual_words.length; j++) {
                             if (recog_text.includes(sexual_words[j])) {
                                 recog_text = recog_text.replace(sexual_words[j], "***");
@@ -299,13 +297,18 @@
                     document.getElementById('speech_text-bg').innerHTML = recog_text;
                     document.getElementById('speech_text-fg').innerHTML = recog_text;
 
+                    // linefeed & simplify
+                    console.log(recog_text);
+                    document.getElementById('recog_text').value = recog_text;
+                    document.getElementById("recog_btn").click();
+
                     // 棒読みちゃんにコメントを送信する
-                    if(bouyomi == "true") {
+                    if (bouyomi == "true") {
                         let bouyomiChanClient = new BouyomiChanClient();
                         bouyomiChanClient.talk(recog_text);
                     }
 
-                    if(gas_key != null){
+                    if (gas_key != null) {
                         // 翻訳1言語目
                         // console.log('arg_trans:'+arg_trans)
                         if(arg_trans != null){
@@ -396,26 +399,30 @@
 
     </script> 
 </head>
- 
-
-
-
-
 
 <body>
+    <form action="/result" method="POST">
+        <p>
+            <input type="text" name="recog_text" id="recog_text" style="display:none">
+            <input type="submit" value="表示" id="recog_btn" style="display:none">
+        </p>
+    </form>
 
     <div class="big" id="result_text">
         <table id="text_table" class="btm_table" style="overflow:hidden;">
             <tr><td id="tbl_td" align="center" valign='bottom'>
                 <div id="speech_text">
                     <div class="stroke-single-bg" id="speech_text-bg">
-                        [音声認識字幕ちゃん (Ver:2023.04.14)]
+                        <!-- [音声認識字幕ちゃん (Ver:2023.12.14)] -->
+                        {{ linefeed_text }}
                     </div> 
                     <div class="stroke-single-fg" id="speech_text-fg">
-                        [音声認識字幕ちゃん (Ver:2023.04.14)]
+                        <!-- [音声認識字幕ちゃん (Ver:2023.12.14)] -->
+                        {{ linefeed_text }}
                     </div>
                     <div class="stroke-single-imb" id="speech_text-imb">
-                        [音声認識字幕ちゃん (Ver:2023.04.14)]
+                        <!-- [音声認識字幕ちゃん (Ver:2023.12.14)] -->
+                        {{ linefeed_text }}
                     </div> 
                 </div>
 
@@ -445,16 +452,7 @@
             </td></tr>
         </table>
     </div>
-
-
 </body>
-
-
-
-
-
-
-
 
 
 <!-- ############## 末尾のjavascript ############## -->
@@ -474,38 +472,44 @@ if (getParam('trans2') == null) {
 
 
 // 表示スタイル変更 ---------------------------------
-if (getParam('bgcolor') != null){
-    document.bgColor = getParam('bgcolor');
-}
+// if (getParam('bgcolor') != null){
+//     document.bgColor = getParam('bgcolor');
+// }
+document.bgColor = "{{ bgcolor }}";
 
-if (getParam('v_align') == "top"){
-    document.getElementById("text_table").style.bottom = -1;
-} else if(getParam('v_align') == "bottom"){
-    document.getElementById("text_table").style.bottom = 0;
-}
+// if (getParam('v_align') == "top"){
+//     document.getElementById("text_table").style.bottom = -1;
+// } else if(getParam('v_align') == "bottom"){
+//     document.getElementById("text_table").style.bottom = 0;
+// }
+document.getElementById("text_table").style.bottom = 0;
 
-if (getParam('textAlign') != null){
-    document.getElementById("text_table").style.textAlign = getParam('textAlign');
-    document.getElementById("tbl_td").style.textAlign = getParam('textAlign');
-    if(getParam('textAlign') == "right"){
-        document.getElementById("text_table").style.direction = "rtl";
-        document.getElementById("tbl_td").style.direction = "rtl";
-        document.body.style.direction = "rtl";
-    }
-}
+// if (getParam('textAlign') != null){
+//     document.getElementById("text_table").style.textAlign = getParam('textAlign');
+//     document.getElementById("tbl_td").style.textAlign = getParam('textAlign');
+//     if(getParam('textAlign') == "right"){
+//         document.getElementById("text_table").style.direction = "rtl";
+//         document.getElementById("tbl_td").style.direction = "rtl";
+//         document.body.style.direction = "rtl";
+//     }
+// }
+document.getElementById("text_table").style.textAlign = "{{textAlign}}"
+document.getElementById("tbl_td").style.textAlign = "{{textAlign}}"
 
-if (getParam('whiteSpace') != null){
-    document.getElementById("text_table").style.whiteSpace = getParam('whiteSpace');
-}
+// if (getParam('whiteSpace') != null){
+//     document.getElementById("text_table").style.whiteSpace = getParam('whiteSpace');
+// }
 
 // 高さ合わせ用フォント（色を背景色と同じにする） ############################################
 // 音声認識テキスト -------
-if (getParam('bgcolor') != null){
-    document.getElementById("speech_text-imb").style.webkitTextStrokeColor = getParam('bgcolor');
-}
-if (getParam('st_width1') != null){
-    document.getElementById("speech_text-imb").style.webkitTextStrokeWidth = getParam('st_width1') + 'pt';
-}
+// if (getParam('bgcolor') != null){
+//     document.getElementById("speech_text-imb").style.webkitTextStrokeColor = getParam('bgcolor');
+// }
+// if (getParam('st_width1') != null){
+//     document.getElementById("speech_text-imb").style.webkitTextStrokeWidth = getParam('st_width1') + 'pt';
+// }
+document.getElementById("speech_text-imb").style.webkitTextStrokeColor = "{{bgcolor}}"
+document.getElementById("speech_text-imb").style.webkitTextStrokeWidth = '{{stwidth}}pt';
 
 // 翻訳結果テキスト -------
 if (getParam('bgcolor') != null){
@@ -528,29 +532,35 @@ if (getParam('st_width3') != null){
 // 全体共通 ----------------
 
 // 音声認識結果 ----------------
-if (getParam('speech_text_font') != null){
-    document.getElementById("speech_text").style.fontFamily = "'" + getParam('speech_text_font') + "'";
-}
+// if (getParam('speech_text_font') != null){
+//     document.getElementById("speech_text").style.fontFamily = "'" + getParam('speech_text_font') + "'";
+// }
 
-if (getParam('size1') != null){
-    document.getElementById("speech_text").style.fontSize = getParam('size1') + 'pt';
-}
+// if (getParam('size1') != null){
+//     document.getElementById("speech_text").style.fontSize = getParam('size1') + 'pt';
+// }
 
-if (getParam('weight1') != null){
-    document.getElementById("speech_text").style.fontWeight = getParam('weight1');
-}
+// if (getParam('weight1') != null){
+//     document.getElementById("speech_text").style.fontWeight = getParam('weight1');
+// }
 
-if (getParam('color1') != null){
-    document.getElementById("speech_text-fg").style.color = getParam('color1');
-}
+// if (getParam('color1') != null){
+//     document.getElementById("speech_text-fg").style.color = getParam('color1');
+// }
 
-if (getParam('st_color1') != null){
-    document.getElementById("speech_text-bg").style.webkitTextStrokeColor = getParam('st_color1');
-}
+// if (getParam('st_color1') != null){
+//     document.getElementById("speech_text-bg").style.webkitTextStrokeColor = getParam('st_color1');
+// }
 
-if (getParam('st_width1') != null){
-    document.getElementById("speech_text-bg").style.webkitTextStrokeWidth = getParam('st_width1') + 'pt';
-}
+// if (getParam('st_width1') != null){
+//     document.getElementById("speech_text-bg").style.webkitTextStrokeWidth = getParam('st_width1') + 'pt';
+// }
+document.getElementById("speech_text").style.fontSize = '{{size1}}pt';
+document.getElementById("speech_text").style.fontWeight = {{weight1}};
+document.getElementById("speech_text-fg").style.color = "{{color1}}";
+document.getElementById("speech_text-bg").style.webkitTextStrokeColor = "{{st_color1}}";
+document.getElementById("speech_text-bg").style.webkitTextStrokeWidth = '{{st_width1}}pt';
+
 
 // 翻訳結果テキスト ----------------
 if (getParam('trans_text_font') != null){
@@ -605,10 +615,5 @@ if (getParam('st_width3') != null){
 
 
 </script>
-
-
-
-
-
 
 </html>

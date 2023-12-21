@@ -1,8 +1,8 @@
 import os
 from datetime import timedelta
+from urllib.parse import parse_qs, urlparse
 
-from flask import Flask  # Flaskと、HTMLをレンダリングするrender_templateをインポート
-from flask import render_template, request, session
+from flask import Flask, redirect, render_template, request, session, url_for
 from markupsafe import Markup
 from model_lfp_insertion import lf_p_insertion
 from model_text_simplify import translate_one_sentence
@@ -17,30 +17,64 @@ app.permanent_session_lifetime = timedelta(minutes=3)
 MAX_LINES = 10
 
 
-@app.route('/')  # localhost:50000/を起動した際に実行される
+@app.route('/')  # https://127.0.0.1:334/を起動した際に実行される
 def index():
     return render_template('index.html')  # index.htmlをレンダリングする
 
 
 @app.route("/main")
 def show_iframe():
+    config = session.get('config', '')
+    if len(config) == 0:
+        textAlign = "left"
+        v_align = "bottom"
+        recog = "ja"
+        bgcolor = "#00ff00"
+        size1 = 25
+        weight1 = 900
+        color1 = "#ffffff"
+        st_color1 = "#000000"
+        st_width1 = 6
+        speech_text_font = "M PLUS Rounded 1c"
+        short_pause = 750
+    else:
+        textAlign = config['textAlign'][0]
+        v_align = config['v_align'][0]
+        recog = config['recog'][0]
+        bgcolor = config['bgcolor'][0]
+        size1 = int(config['size1'][0])
+        weight1 = int(config['weight1'][0])
+        color1 = config['color1'][0]
+        st_color1 = config['st_color1'][0]
+        st_width1 = int(config['st_width1'][0])
+        speech_text_font = config['speech_text_font'][0]
+        short_pause = int(config['short_pause'][0])
+
+
+    text = session.get('text', '')
+    if text == '':
+        text = "[ここに結果表示（音声認識）]"
+
     return render_template(
         "main.html",
-        bgcolor="#00ff00",
-        bottom=0,
-        textAlign="left",
-        stwidth=6,
-        fontsize=25,
-        fontweight=900,
-        stylecolor="#ffffff",
-        stcolor="#000000",
-        linefeed_text="[ここに結果表示（音声認識）]"
+        textAlign=textAlign,
+        v_align=v_align,
+        recog=recog,
+        bgcolor=bgcolor,
+        size1=size1,
+        weight1=weight1,
+        color1=color1,
+        st_color1=st_color1,
+        st_width1=st_width1,
+        speech_text_font=speech_text_font,
+        short_pause=short_pause,
+        linefeed_text=Markup(text)
     )
 
 
 @app.route('/result', methods=['GET', 'POST'])
 def result():
-    # session に保存してあるテキストを読み込み
+    # session から text を取得
     text = session.get('text', '')
 
     text_split = text.split('<br>')  # 改行<br>で分割
@@ -66,19 +100,64 @@ def result():
     # 改行挿入結果を session に保存
     session['text'] = linefeed_text
 
+    # session から config を取得
+    config = session.get('config', '')
+    if len(config) == 0:
+        textAlign = "left"
+        v_align = "bottom"
+        recog = "ja"
+        bgcolor = "#00ff00"
+        size1 = 25
+        weight1 = 900
+        color1 = "#ffffff"
+        st_color1 = "#000000"
+        st_width1 = 6
+        speech_text_font = "M PLUS Rounded 1c"
+        short_pause = 750
+    else:
+        textAlign = config['textAlign'][0]
+        v_align = config['v_align'][0]
+        recog = config['recog'][0]
+        bgcolor = config['bgcolor'][0]
+        size1 = int(config['size1'][0])
+        weight1 = int(config['weight1'][0])
+        color1 = config['color1'][0]
+        st_color1 = config['st_color1'][0]
+        st_width1 = int(config['st_width1'][0])
+        speech_text_font = config['speech_text_font'][0]
+        short_pause = int(config['short_pause'][0])
+
     # 表示
     return render_template(
         "main.html",
-        bgcolor="#00ff00",
-        bottom=0,
-        textAlign="left",
-        stwidth=6,
-        fontsize=25,
-        fontweight=900,
-        stylecolor="#ffffff",
-        stcolor="#000000",
+        textAlign=textAlign,
+        v_align=v_align,
+        recog=recog,
+        bgcolor=bgcolor,
+        size1=size1,
+        weight1=weight1,
+        color1=color1,
+        st_color1=st_color1,
+        st_width1=st_width1,
+        speech_text_font=speech_text_font,
+        short_pause=short_pause,
         linefeed_text=Markup(linefeed_text)
     )
+
+
+@app.route('/config', methods=['GET', 'POST'])
+def set_config():
+    config = request.form.get('url')
+
+    # URLを解析してクエリパラメータを取得
+    config = config.replace("#", "%23")
+    parsed_url = urlparse(config)
+    query_parameters = parse_qs(parsed_url.query)
+
+    # session に保存
+    session['config'] = query_parameters
+
+    return redirect(url_for('index'))
 
 
 if __name__ == '__main__':
