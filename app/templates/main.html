@@ -15,7 +15,7 @@
 
     <link href="/static/css/font.css" rel="stylesheet">
 
-    <!-- <link rel="icon" href="./img/favicon2/favicon.ico" /> -->
+    <link rel="icon" href="/static/img/favicon.ico" />
     <script src="/static/js/bouyomichan_client.js"></script>
 
     <!-- Google tag (gtag.js) -->
@@ -220,24 +220,24 @@
             // console.log("onstart cnt:" + String(my_count));
         }
         recognition.onaudiostart = () => {
-            console.log("onaudiostart cnt:" + String(my_count));
+            // console.log("onaudiostart cnt:" + String(my_count));
         }
         recognition.onsoundstart = () => {
-            console.log("onsoundstart cnt:" + String(my_count));
+            // console.log("onsoundstart cnt:" + String(my_count));
         }
         recognition.onspeechstart = () => {
-            console.log("onspeechstart cnt:" + String(my_count));
+            // console.log("onspeechstart cnt:" + String(my_count));
         }
 
         // 音声・認識 終了
         recognition.onspeechend = () => {
-            console.log("onspeechend cnt:" + String(my_count));
+            // console.log("onspeechend cnt:" + String(my_count));
         }
         recognition.onsoundend = () => {
-            console.log("onsoundend cnt:" + String(my_count));
+            // console.log("onsoundend cnt:" + String(my_count));
         }
         recognition.onaudioend = () => {
-            console.log("onaudioend cnt:" + String(my_count));
+            // console.log("onaudioend cnt:" + String(my_count));
         }
         recognition.onend = () => {
             // console.log("onend cnt:" + String(my_count));
@@ -248,11 +248,11 @@
 
         // エラー等
         recognition.onerror = () => {
-            console.log("onerror cnt:" + String(my_count));
+            // console.log("onerror cnt:" + String(my_count));
             recognition.stop();
         }
         recognition.onnomatch = () => {
-            console.log("onnomatch cnt:" + String(my_count));
+            // console.log("onnomatch cnt:" + String(my_count));
             recognition.stop();
         }
 
@@ -395,7 +395,7 @@
         }
 
         recognition.start();
-        console.log("recog start: cnt:" + String(my_count));
+        // console.log("recog start: cnt:" + String(my_count));
 
     </script> 
 </head>
