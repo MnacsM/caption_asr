@@ -45,6 +45,6 @@ tqdm==4.65.0
 transformers==4.36.0
 typer==0.7.0
 typing_extensions==4.6.3
-urllib3==2.0.3
+urllib3==2.0.7
 wasabi==0.10.1
 Werkzeug==3.0.3
