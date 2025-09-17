@@ -40,7 +40,7 @@ SudachiPy==0.6.7
 sympy==1.12
 thinc==8.1.10
 tokenizers==0.13.3
-torch==2.2.0
+torch==2.8.0
 tqdm==4.66.3
 transformers==4.48.0
 typer==0.7.0
